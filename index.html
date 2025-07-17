@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV Timesheet Analyzer</title>
+    <title>Timesheet CSV Processor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -15,9 +15,9 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: #333;
             line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
             padding: 20px;
             min-height: 100vh;
         }
@@ -25,444 +25,412 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
         }
         
         header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
+            background: linear-gradient(120deg, #1e3c72, #2a5298);
             color: white;
+            padding: 25px 30px;
+            text-align: center;
         }
         
         h1 {
-            font-size: 2.8rem;
+            font-size: 2.2rem;
             margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
         .subtitle {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             opacity: 0.9;
             max-width: 700px;
             margin: 0 auto;
         }
         
-        .card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            overflow: hidden;
-            margin-bottom: 25px;
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
         }
         
-        .card-header {
-            background: #2c3e50;
-            color: white;
-            padding: 18px 25px;
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
             font-size: 1.4rem;
+            color: #2a5298;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #eaeef5;
             display: flex;
             align-items: center;
         }
         
-        .card-header i {
-            margin-right: 12px;
+        .card-title i {
+            margin-right: 10px;
             font-size: 1.6rem;
         }
         
-        .card-body {
-            padding: 25px;
+        .upload-area {
+            border: 2px dashed #a0b8e0;
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            background: #f8fafd;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #2a5298;
+            background: #edf3fc;
+        }
+        
+        .upload-area p {
+            margin: 15px 0;
+            color: #5a7cba;
         }
         
         .btn {
-            background: linear-gradient(to right, #3498db, #2980b9);
+            background: linear-gradient(to right, #1e3c72, #2a5298);
             color: white;
             border: none;
-            padding: 14px 28px;
-            border-radius: 50px;
-            cursor: pointer;
+            padding: 12px 25px;
+            border-radius: 6px;
             font-size: 1rem;
             font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .btn i {
-            margin-right: 8px;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(30, 60, 114, 0.2);
         }
         
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(30, 60, 114, 0.3);
         }
         
         .btn:active {
-            transform: translateY(-1px);
+            transform: translateY(0);
         }
         
-        .btn-success {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        .btn-export {
+            background: linear-gradient(to right, #27ae60, #2ecc71);
         }
         
-        .btn-success:hover {
-            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(to right, #e67e22, #d35400);
-            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+        .btn-add {
+            background: linear-gradient(to right, #2980b9, #3498db);
+            padding: 8px 15px;
+            font-size: 0.9rem;
         }
         
         .file-info {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid #3498db;
-        }
-        
-        .file-info h4 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .file-info p {
-            margin: 5px 0;
-            font-size: 1.05rem;
-        }
-        
-        .stats {
-            background: #e3f2fd;
-            border-radius: 10px;
-            padding: 15px;
             margin: 15px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        .stat-item {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            flex: 1;
-            min-width: 200px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #2980b9;
-            margin: 10px 0;
-        }
-        
-        .stat-label {
-            color: #7f8c8d;
+            padding: 12px 15px;
+            background: #edf2f7;
+            border-radius: 6px;
             font-size: 0.95rem;
         }
         
-        .tables-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 25px;
-            margin-top: 20px;
+        .message {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 0.95rem;
         }
         
-        .table-section {
-            flex: 1;
-            min-width: 300px;
+        .error {
+            background: #fdeded;
+            color: #e53935;
+            border-left: 4px solid #e53935;
+        }
+        
+        .success {
+            background: #edf7ed;
+            color: #43a047;
+            border-left: 4px solid #43a047;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin: 20px 0;
+            font-size: 0.95rem;
         }
         
         th {
-            background: #3498db;
+            background: linear-gradient(to bottom, #2a5298, #1e3c72);
             color: white;
             text-align: left;
-            padding: 15px;
-            font-weight: 600;
+            padding: 12px 15px;
+            position: sticky;
+            top: 0;
         }
         
         td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eaeef5;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8fafd;
         }
         
         tr:hover {
-            background-color: #f5f9ff;
+            background-color: #edf3fc;
         }
         
-        .project-row {
-            cursor: pointer;
-            transition: background-color 0.2s;
+        input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d8e0;
+            border-radius: 4px;
+            font-size: 0.95rem;
         }
         
-        .project-row:hover {
-            background-color: #e3f2fd;
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 2px rgba(42, 82, 152, 0.2);
         }
         
-        .selected-project {
-            background-color: #d1e7ff;
-            font-weight: bold;
+        .grand-total {
+            font-weight: 700;
+            background: #e3f2fd;
         }
         
-        .project-details {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            border-left: 4px solid #2ecc71;
-        }
-        
-        .project-details h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .project-details h3 span {
-            color: #3498db;
-            margin-left: 8px;
-        }
-        
-        .hours-badge {
-            background: #3498db;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        
-        .message {
-            padding: 15px;
+        .preview-container {
+            max-height: 400px;
+            overflow: auto;
+            border: 1px solid #e1e8f0;
             border-radius: 8px;
-            margin: 15px 0;
+            margin-top: 15px;
+        }
+        
+        .controls {
             display: flex;
-            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eaeef5;
         }
         
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #c62828;
+        .manual-row-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
         }
         
-        .success {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-left: 4px solid #2e7d32;
+        .form-group {
+            flex: 1;
+            min-width: 150px;
         }
         
-        .warning {
-            background: #fff8e1;
-            color: #f57f17;
-            border-left: 4px solid #f57f17;
-        }
-        
-        .message i {
-            margin-right: 10px;
-            font-size: 1.4rem;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: rgba(255,255,255,0.7);
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
             font-size: 0.9rem;
-            padding: 20px;
+            color: #4a5568;
+            font-weight: 500;
         }
         
-        @media (max-width: 768px) {
-            .tables-container {
-                flex-direction: column;
-            }
-            
-            .stats {
-                flex-direction: column;
-            }
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d8e0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        
+        .instructions {
+            background: #f8fafd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: #2a5298;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .instructions p {
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+            font-size: 0.9rem;
+            border-top: 1px solid #eaeef5;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>CSV Timesheet Analyzer</h1>
-            <p class="subtitle">Upload your timesheet CSV to analyze project hours, view task breakdowns, and export detailed reports</p>
+            <h1>Timesheet CSV Processor</h1>
+            <p class="subtitle">Upload your CSV timesheet, group tasks by project, and generate professional invoices</p>
         </header>
         
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-file-upload"></i>
-                Step 1: Upload Timesheet CSV
-            </div>
-            <div class="card-body">
-                <button class="btn" onclick="document.getElementById('csvFileInput').click()">
-                    <i class="fas fa-file-csv"></i> Choose CSV File
-                </button>
-                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
-                
-                <div id="fileInfo" class="file-info hidden">
-                    <h4><i class="fas fa-info-circle"></i> File Information</h4>
-                    <p><strong>File Name:</strong> <span id="fileName">-</span></p>
-                    <p><strong>File Size:</strong> <span id="fileSize">-</span></p>
-                    <p><strong>Rows Processed:</strong> <span id="rowsProcessed">-</span></p>
-                    <p><strong>Projects Found:</strong> <span id="projectsFound">-</span></p>
-                </div>
-                
-                <div id="message" class="message hidden"></div>
-            </div>
-        </div>
-        
-        <div class="card hidden" id="analysisCard">
-            <div class="card-header">
-                <i class="fas fa-chart-bar"></i>
-                Step 2: Analyze Project Hours
-            </div>
-            <div class="card-body">
-                <div id="stats" class="stats hidden">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalProjects">0</div>
-                        <div class="stat-label">Total Projects</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalHours">0</div>
-                        <div class="stat-label">Total Hours</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalTasks">0</div>
-                        <div class="stat-label">Unique Tasks</div>
-                    </div>
-                </div>
-                
-                <div class="tables-container">
-                    <div class="table-section">
-                        <h3><i class="fas fa-project-diagram"></i> Projects Summary</h3>
-                        <table id="projectsTable">
-                            <thead>
-                                <tr>
-                                    <th>Project</th>
-                                    <th>Total Hours</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Project rows will be inserted here -->
-                            </tbody>
-                        </table>
+        <div class="content">
+            <div class="left-column">
+                <div class="card">
+                    <h2 class="card-title">Upload & Process</h2>
+                    
+                    <div class="upload-area">
+                        <p>Upload your timesheet CSV file</p>
+                        <button class="btn" id="uploadBtn">
+                            📁 Choose CSV File
+                        </button>
+                        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
                     </div>
                     
-                    <div class="table-section">
-                        <h3><i class="fas fa-tasks"></i> Project Tasks</h3>
-                        <div class="project-details hidden" id="projectDetails">
-                            <h3>Selected Project: <span id="selectedProjectName">-</span></h3>
-                            <table id="tasksTable">
-                                <thead>
-                                    <tr>
-                                        <th>Task</th>
-                                        <th>Hours</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Task rows will be inserted here -->
-                                </tbody>
-                            </table>
-                            <div class="stats" style="margin-top: 15px;">
-                                <div class="stat-item">
-                                    <div class="stat-value" id="projectTotalHours">0</div>
-                                    <div class="stat-label">Total Project Hours</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value" id="projectTaskCount">0</div>
-                                    <div class="stat-label">Tasks</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="noProjectMessage" class="message warning">
-                            <i class="fas fa-info-circle"></i> Select a project to view its task breakdown
-                        </div>
+                    <div id="fileInfo" class="file-info" style="display: none;"></div>
+                    <div id="message"></div>
+                    
+                    <div class="instructions">
+                        <h3>CSV Format Requirements</h3>
+                        <p>Your CSV should include the following columns:</p>
+                        <ul>
+                            <li><strong>Project</strong> - Project name or ID</li>
+                            <li><strong>Task</strong> - Description of work performed</li>
+                            <li><strong>Hours</strong> - Time spent on the task (numeric)</li>
+                            <li><strong>Date</strong> - Date of work (optional)</li>
+                        </ul>
+                        <p>Column names can vary - we'll detect them automatically.</p>
                     </div>
                 </div>
                 
-                <div style="margin-top: 25px; text-align: center;">
-                    <button class="btn btn-success" id="exportBtn" class="hidden">
-                        <i class="fas fa-file-pdf"></i> Export Project to PDF
-                    </button>
+                <div class="card" id="addRowSection" style="display: none;">
+                    <h2 class="card-title">Add Manual Entry</h2>
+                    <div class="manual-row-form">
+                        <div class="form-group">
+                            <label for="projectInput">Project Name</label>
+                            <input type="text" id="projectInput" placeholder="Enter project name">
+                        </div>
+                        <div class="form-group">
+                            <label for="hoursInput">Hours</label>
+                            <input type="number" id="hoursInput" min="0" step="0.25" placeholder="Total hours">
+                        </div>
+                        <div class="form-group">
+                            <label for="rateInput">Hourly Rate ($)</label>
+                            <input type="number" id="rateInput" min="0" step="1" value="10">
+                        </div>
+                    </div>
+                    <button class="btn btn-add" onclick="addManualRow()">+ Add Entry</button>
+                </div>
+            </div>
+            
+            <div class="right-column">
+                <div class="card">
+                    <h2 class="card-title">Project Summary</h2>
+                    <div id="finalProcessing" style="display: none;">
+                        <div class="preview-container">
+                            <table id="finalTable">
+                                <thead>
+                                    <tr>
+                                        <th>Project Name</th>
+                                        <th>Total Hours</th>
+                                        <th>Hourly Charges</th>
+                                        <th>Total Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="finalTableBody"></tbody>
+                                <tfoot id="finalTableFooter"></tfoot>
+                            </table>
+                        </div>
+                        
+                        <div class="controls">
+                            <button class="btn btn-export" onclick="exportToPDF()" id="exportBtn">
+                                📄 Export to PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="summaryPlaceholder">
+                        <p style="text-align: center; padding: 40px 20px; color: #718096;">
+                            Upload a CSV file to see your project summary
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="footer">
-            <p>CSV Timesheet Analyzer &bull; Easily summarize project hours and tasks</p>
-            <p>Automatically detects columns: Project, Task, Hours</p>
-        </div>
+        <footer>
+            <p>Timesheet CSV Processor &copy; 2023 | Process and invoice your timesheets efficiently</p>
+        </footer>
     </div>
 
     <script>
         // Global variables
         let allData = [];
         let headers = [];
-        let projectData = {};
-        let currentProject = null;
-        
-        // Common column names for auto-detection
-        const projectColumns = ['project', 'proj', 'project name', 'project title'];
-        const taskColumns = ['task', 'description', 'activity', 'work done'];
-        const hourColumns = ['hours', 'time', 'duration', 'hrs', 'hours worked'];
-        
+        let finalTableData = [];
+        let columnMapping = {
+            project: null,
+            task: null,
+            hours: null
+        };
+
         // DOM elements
         const csvFileInput = document.getElementById('csvFileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
         const fileInfo = document.getElementById('fileInfo');
         const messageDiv = document.getElementById('message');
-        const analysisCard = document.getElementById('analysisCard');
-        const statsDiv = document.getElementById('stats');
-        const projectsTable = document.getElementById('projectsTable');
-        const projectDetails = document.getElementById('projectDetails');
-        const selectedProjectName = document.getElementById('selectedProjectName');
-        const tasksTable = document.getElementById('tasksTable');
+        const addRowSection = document.getElementById('addRowSection');
+        const finalProcessing = document.getElementById('finalProcessing');
+        const finalTableBody = document.getElementById('finalTableBody');
+        const finalTableFooter = document.getElementById('finalTableFooter');
         const exportBtn = document.getElementById('exportBtn');
-        const noProjectMessage = document.getElementById('noProjectMessage');
-        const totalProjects = document.getElementById('totalProjects');
-        const totalHours = document.getElementById('totalHours');
-        const totalTasks = document.getElementById('totalTasks');
-        const projectTotalHours = document.getElementById('projectTotalHours');
-        const projectTaskCount = document.getElementById('projectTaskCount');
-        
-        // Initialize event listeners
+        const summaryPlaceholder = document.getElementById('summaryPlaceholder');
+
+        // Event listeners
+        uploadBtn.addEventListener('click', () => csvFileInput.click());
         csvFileInput.addEventListener('change', handleFileUpload);
-        exportBtn.addEventListener('click', exportToPDF);
-        
+
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            // Reset previous data
-            resetAnalysis();
-            
-            // Show file info
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileSize').textContent = `${(file.size / 1024).toFixed(2)} KB`;
-            fileInfo.classList.remove('hidden');
+            fileInfo.innerHTML = `
+                <strong>File:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)
+            `;
+            fileInfo.style.display = 'block';
             
             if (!file.name.toLowerCase().endsWith('.csv')) {
                 showMessage('Error: Please select a CSV file.', 'error');
@@ -475,7 +443,7 @@
             };
             reader.readAsText(file);
         }
-        
+
         function parseCSV(csv) {
             try {
                 const lines = csv.split('\n').filter(line => line.trim());
@@ -489,244 +457,264 @@
                     }
                 }
                 
-                document.getElementById('rowsProcessed').textContent = allData.length;
-                showMessage(`Successfully loaded ${allData.length} timesheet entries.`, 'success');
-                
-                // Process the CSV data
-                processTimesheetData();
+                showMessage(`Success: Loaded ${allData.length} rows.`, 'success');
+                detectColumnMapping();
+                processData();
                 
             } catch (error) {
                 showMessage(`Error parsing CSV: ${error.message}`, 'error');
             }
         }
-        
-        function processTimesheetData() {
-            // Auto-detect columns
-            const projectIndex = detectColumnIndex(projectColumns);
-            const taskIndex = detectColumnIndex(taskColumns);
-            const hourIndex = detectColumnIndex(hourColumns);
+
+        function detectColumnMapping() {
+            // Simple heuristic to detect columns based on common names
+            const commonProjectNames = ['project', 'project name', 'project id', 'client', 'client name'];
+            const commonTaskNames = ['task', 'description', 'activity', 'work description'];
+            const commonHourNames = ['hours', 'time', 'duration', 'hours worked'];
             
-            if (projectIndex === -1 || hourIndex === -1) {
-                showMessage('Error: Could not detect required columns (Project and Hours).', 'error');
-                return;
+            columnMapping.project = findColumnIndex(commonProjectNames);
+            columnMapping.task = findColumnIndex(commonTaskNames);
+            columnMapping.hours = findColumnIndex(commonHourNames);
+            
+            // If detection fails, use the first columns as fallback
+            if (columnMapping.project === null) columnMapping.project = 0;
+            if (columnMapping.task === null) columnMapping.task = 1;
+            if (columnMapping.hours === null) columnMapping.hours = 2;
+        }
+
+        function findColumnIndex(names) {
+            for (const name of names) {
+                const index = headers.findIndex(h => h.toLowerCase().includes(name));
+                if (index !== -1) return index;
             }
+            return null;
+        }
+
+        function processData() {
+            // Group data by project
+            const projects = {};
             
-            // Reset project data
-            projectData = {};
-            
-            // Process each row
             allData.forEach(row => {
-                const project = row[projectIndex] || 'Uncategorized';
-                const task = (taskIndex !== -1) ? (row[taskIndex] || 'General Task') : 'General Task';
-                const hours = parseFloat(row[hourIndex]) || 0;
+                const projectName = row[columnMapping.project];
+                const task = row[columnMapping.task];
+                const hours = parseFloat(row[columnMapping.hours]) || 0;
                 
-                // Initialize project if not exists
-                if (!projectData[project]) {
-                    projectData[project] = {
+                if (!projectName) return;
+                
+                if (!projects[projectName]) {
+                    projects[projectName] = {
+                        tasks: new Set(),
                         totalHours: 0,
-                        tasks: {}
+                        hourlyCharge: 10
                     };
                 }
                 
-                // Initialize task if not exists
-                if (!projectData[project].tasks[task]) {
-                    projectData[project].tasks[task] = 0;
-                }
-                
-                // Add hours
-                projectData[project].tasks[task] += hours;
-                projectData[project].totalHours += hours;
+                if (task) projects[projectName].tasks.add(task);
+                projects[projectName].totalHours += hours;
             });
             
-            // Update stats
-            const projectCount = Object.keys(projectData).length;
-            let allHours = 0;
-            let taskCount = 0;
+            // Convert to final table data
+            finalTableData = Object.keys(projects).map(project => ({
+                project,
+                tasks: Array.from(projects[project].tasks),
+                totalHours: projects[project].totalHours,
+                hourlyCharge: projects[project].hourlyCharge,
+                isGrouped: true
+            }));
             
-            Object.values(projectData).forEach(project => {
-                allHours += project.totalHours;
-                taskCount += Object.keys(project.tasks).length;
-            });
-            
-            totalProjects.textContent = projectCount;
-            totalHours.textContent = allHours.toFixed(2);
-            totalTasks.textContent = taskCount;
-            document.getElementById('projectsFound').textContent = projectCount;
-            
-            // Render projects table
-            renderProjectsTable();
-            
-            // Show analysis section
-            analysisCard.classList.remove('hidden');
-            statsDiv.classList.remove('hidden');
-            exportBtn.classList.remove('hidden');
+            // Show the UI
+            addRowSection.style.display = 'block';
+            finalProcessing.style.display = 'block';
+            summaryPlaceholder.style.display = 'none';
+            renderFinalTable();
         }
-        
-        function detectColumnIndex(columnNames) {
-            const lowerHeaders = headers.map(h => h.toLowerCase());
-            for (const name of columnNames) {
-                const index = lowerHeaders.indexOf(name.toLowerCase());
-                if (index !== -1) return index;
+
+        function renderFinalTable() {
+            if (!finalTableData.length) {
+                finalTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No data available</td></tr>';
+                return;
             }
-            return -1;
-        }
-        
-        function renderProjectsTable() {
-            const tbody = projectsTable.querySelector('tbody');
-            tbody.innerHTML = '';
             
-            // Sort projects by hours (descending)
-            const sortedProjects = Object.entries(projectData).sort((a, b) => b[1].totalHours - a[1].totalHours);
+            let tableHTML = '';
+            let grandTotal = 0;
             
-            sortedProjects.forEach(([project, data]) => {
-                const row = document.createElement('tr');
-                row.className = 'project-row';
-                row.dataset.project = project;
-                row.innerHTML = `
-                    <td>${project}</td>
-                    <td>${data.totalHours.toFixed(2)}</td>
+            finalTableData.forEach((row, index) => {
+                const totalAmount = row.totalHours * row.hourlyCharge;
+                grandTotal += totalAmount;
+                
+                tableHTML += `
+                    <tr>
+                        <td>
+                            <strong>${escapeHTML(row.project)}</strong>
+                            ${row.tasks && row.tasks.length ? 
+                                `<div style="font-size:0.85em; color:#666; margin-top:5px;">
+                                    ${escapeHTML(row.tasks.join(', '))}
+                                </div>` : 
+                                ''
+                            }
+                        </td>
+                        <td>${row.totalHours.toFixed(2)}</td>
+                        <td>
+                            <input type="number" min="0" step="1" 
+                                value="${row.hourlyCharge}" 
+                                onchange="updateHourlyRate(${index}, this.value)">
+                        </td>
+                        <td>$${totalAmount.toFixed(2)}</td>
+                    </tr>
                 `;
-                row.addEventListener('click', () => selectProject(project));
-                tbody.appendChild(row);
             });
+            
+            finalTableBody.innerHTML = tableHTML;
+            
+            // Add grand total row
+            finalTableFooter.innerHTML = `
+                <tr class="grand-total">
+                    <td colspan="3" style="text-align: right;"><strong>Grand Total</strong></td>
+                    <td><strong>$${grandTotal.toFixed(2)}</strong></td>
+                </tr>
+            `;
         }
-        
-        function selectProject(project) {
-            // Update UI
-            currentProject = project;
+
+        function addManualRow() {
+            const projectInput = document.getElementById('projectInput');
+            const hoursInput = document.getElementById('hoursInput');
+            const rateInput = document.getElementById('rateInput');
             
-            // Remove previous selection
-            document.querySelectorAll('.project-row').forEach(row => {
-                row.classList.remove('selected-project');
+            const project = projectInput.value.trim();
+            const hours = parseFloat(hoursInput.value);
+            const rate = parseFloat(rateInput.value);
+            
+            if (!project) {
+                showMessage('Please enter a project name', 'error');
+                return;
+            }
+            
+            if (isNaN(hours)) {
+                showMessage('Please enter valid hours', 'error');
+                return;
+            }
+            
+            finalTableData.push({
+                project,
+                tasks: [],
+                totalHours: hours,
+                hourlyCharge: rate,
+                isGrouped: false
             });
             
-            // Add selection to current row
-            document.querySelector(`.project-row[data-project="${project}"]`).classList.add('selected-project');
+            renderFinalTable();
             
-            // Show project details
-            selectedProjectName.textContent = project;
+            // Reset form
+            projectInput.value = '';
+            hoursInput.value = '';
+            rateInput.value = '10';
             
-            // Render tasks table
-            const tasks = projectData[project].tasks;
-            const tbody = tasksTable.querySelector('tbody');
-            tbody.innerHTML = '';
-            
-            // Sort tasks by hours (descending)
-            const sortedTasks = Object.entries(tasks).sort((a, b) => b[1] - a[1]);
-            
-            sortedTasks.forEach(([task, hours]) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${task}</td>
-                    <td>${hours.toFixed(2)}</td>
-                `;
-                tbody.appendChild(row);
-            });
-            
-            // Update project stats
-            projectTotalHours.textContent = projectData[project].totalHours.toFixed(2);
-            projectTaskCount.textContent = Object.keys(tasks).length;
-            
-            // Show details section
-            projectDetails.classList.remove('hidden');
-            noProjectMessage.classList.add('hidden');
+            showMessage('Manual entry added successfully', 'success');
         }
-        
+
+        function updateHourlyRate(index, value) {
+            const rate = parseFloat(value);
+            if (!isNaN(rate)) {
+                finalTableData[index].hourlyCharge = rate;
+                renderFinalTable();
+            }
+        }
+
         function exportToPDF() {
-            if (!currentProject) {
-                showMessage('Please select a project first.', 'error');
+            if (typeof window.jspdf === 'undefined') {
+                showMessage('PDF library not loaded. Please refresh and try again.', 'error');
+                return;
+            }
+            
+            if (!finalTableData.length) {
+                showMessage('No data to export', 'error');
                 return;
             }
             
             try {
-                if (typeof window.jspdf === 'undefined') {
-                    showMessage('PDF library not loaded. Please refresh and try again.', 'error');
-                    return;
-                }
-                
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                // Project title
+                // Title
                 doc.setFontSize(18);
-                doc.setFont(undefined, 'bold');
-                doc.text(`Timesheet Report: ${currentProject}`, 20, 20);
+                doc.text('Timesheet Summary', 20, 20);
                 
-                // Report details
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'normal');
-                doc.text(`Report generated on: ${new Date().toLocaleDateString()}`, 20, 30);
-                doc.text(`Total hours: ${projectData[currentProject].totalHours.toFixed(2)}`, 20, 40);
+                // Date
+                doc.setFontSize(10);
+                doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
                 
                 // Prepare table data
-                const tasks = projectData[currentProject].tasks;
-                const tableData = [];
-                
-                // Sort tasks by hours (descending)
-                const sortedTasks = Object.entries(tasks).sort((a, b) => b[1] - a[1]);
-                
-                sortedTasks.forEach(([task, hours]) => {
-                    tableData.push([task, hours.toFixed(2)]);
+                const tableData = finalTableData.map(row => {
+                    const totalAmount = row.totalHours * row.hourlyCharge;
+                    return [
+                        row.project,
+                        row.totalHours.toFixed(2),
+                        `$${row.hourlyCharge.toFixed(2)}`,
+                        `$${totalAmount.toFixed(2)}`
+                    ];
                 });
                 
-                // Add total row
-                tableData.push(['TOTAL', projectData[currentProject].totalHours.toFixed(2)]);
+                // Calculate grand total
+                const grandTotal = finalTableData.reduce((sum, row) => 
+                    sum + (row.totalHours * row.hourlyCharge), 0);
+                
+                // Add grand total row
+                tableData.push([
+                    {content: 'Grand Total', colSpan: 3, styles: {fontStyle: 'bold', halign: 'right'}},
+                    {content: `$${grandTotal.toFixed(2)}`, styles: {fontStyle: 'bold'}}
+                ]);
                 
                 // Create table
                 doc.autoTable({
-                    head: [['Task', 'Hours']],
+                    head: [['Project Name', 'Total Hours', 'Hourly Rate', 'Total Amount']],
                     body: tableData,
-                    startY: 50,
-                    styles: { fontSize: 10 },
+                    startY: 35,
+                    styles: { fontSize: 10, cellPadding: 3 },
                     headStyles: { 
-                        fillColor: [41, 128, 185],
+                        fillColor: [30, 60, 114],
                         textColor: 255,
                         fontStyle: 'bold'
                     },
                     alternateRowStyles: { fillColor: [245, 245, 245] },
-                    margin: { top: 50 },
-                    didDrawCell: function(data) {
-                        // Highlight the total row
-                        if (data.row.index === tableData.length - 1) {
-                            doc.setFillColor(46, 204, 113);
-                            doc.setTextColor(255, 255, 255);
-                            doc.setFontStyle('bold');
-                        }
-                    }
+                    margin: { top: 35, left: 10, right: 10 },
                 });
                 
                 // Save PDF
-                doc.save(`timesheet_${currentProject.replace(/\s+/g, '_')}.pdf`);
+                doc.save(`timesheet-summary-${new Date().toISOString().slice(0, 10)}.pdf`);
                 showMessage('PDF exported successfully!', 'success');
                 
             } catch (error) {
-                console.error('PDF Error:', error);
                 showMessage('PDF export failed: ' + error.message, 'error');
+                console.error('PDF Error:', error);
             }
         }
-        
+
+        // Utility functions
         function showMessage(message, type) {
             messageDiv.textContent = message;
-            messageDiv.className = 'message ' + type;
-            messageDiv.classList.remove('hidden');
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
             
-            // Auto-hide success messages after 5 seconds
+            // Auto-hide success messages
             if (type === 'success') {
                 setTimeout(() => {
-                    messageDiv.classList.add('hidden');
-                }, 5000);
+                    messageDiv.style.display = 'none';
+                }, 3000);
             }
         }
-        
-        function resetAnalysis() {
-            projectData = {};
-            currentProject = null;
-            projectsTable.querySelector('tbody').innerHTML = '';
-            tasksTable.querySelector('tbody').innerHTML = '';
-            projectDetails.classList.add('hidden');
-            noProjectMessage.classList.remove('hidden');
-            messageDiv.classList.add('hidden');
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
         }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Timesheet processor initialized');
+        });
     </script>
 </body>
 </html>
