@@ -3,179 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV Upload with Filter & Export</title>
+    <title>CSV Timesheet Analyzer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <script>
-        // Wait for libraries to load
-        window.addEventListener('load', function() {
-            console.log('jsPDF available:', typeof window.jspdf !== 'undefined');
-        });
-    </script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 20px auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            line-height: 1.6;
             padding: 20px;
-            background: #f5f5f5;
+            min-height: 100vh;
         }
+        
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        .btn {
-            background: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 5px;
-        }
-        .btn:hover { background: #0056b3; }
-        .btn-success { background: #28a745; }
-        .btn-success:hover { background: #218838; }
-        .file-info {
-            margin: 20px 0;
-            padding: 15px;
-            background: #e9ecef;
-            border-radius: 5px;
-        }
-        .filters {
-            margin: 20px 0;
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
             padding: 20px;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        
+        .card-header {
+            background: #2c3e50;
+            color: white;
+            padding: 18px 25px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-header i {
+            margin-right: 12px;
+            font-size: 1.6rem;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, #e67e22, #d35400);
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+        }
+        
+        .file-info {
             background: #f8f9fa;
-            border-radius: 5px;
-            display: none;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
         }
-        .column-selector {
-            margin: 15px 0;
+        
+        .file-info h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .file-info p {
+            margin: 5px 0;
+            font-size: 1.05rem;
+        }
+        
+        .stats {
+            background: #e3f2fd;
+            border-radius: 10px;
             padding: 15px;
-            background: #fff3cd;
-            border-radius: 5px;
-        }
-        .column-checkboxes {
+            margin: 15px 0;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 20px;
+        }
+        
+        .stat-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            flex: 1;
+            min-width: 200px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2980b9;
             margin: 10px 0;
         }
-        .column-checkboxes label {
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+        
+        .tables-container {
             display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 12px;
-        }
-        .filter-row {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-            align-items: center;
-        }
-        .filter-row select, .filter-row input {
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-        }
-        .preview {
+            flex-wrap: wrap;
+            gap: 25px;
             margin-top: 20px;
-            max-height: 400px;
-            overflow: auto;
-            border: 1px solid #ddd;
-            border-radius: 5px;
         }
+        
+        .table-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            margin: 15px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
+        
         th {
-            background: #f8f9fa;
+            background: #3498db;
+            color: white;
+            text-align: left;
+            padding: 15px;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background-color: #f5f9ff;
+        }
+        
+        .project-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .project-row:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .selected-project {
+            background-color: #d1e7ff;
             font-weight: bold;
-            position: sticky;
-            top: 0;
         }
+        
+        .project-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .project-details h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .project-details h3 span {
+            color: #3498db;
+            margin-left: 8px;
+        }
+        
+        .hours-badge {
+            background: #3498db;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+        }
+        
         .error {
-            color: #dc3545;
-            background: #f8d7da;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
         }
+        
         .success {
-            color: #155724;
-            background: #d4edda;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
         }
-        .stats {
-            margin: 10px 0;
-            padding: 10px;
-            background: #e3f2fd;
-            border-radius: 5px;
+        
+        .warning {
+            background: #fff8e1;
+            color: #f57f17;
+            border-left: 4px solid #f57f17;
+        }
+        
+        .message i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .tables-container {
+                flex-direction: column;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>CSV Upload with Filter & Export</h1>
+        <header>
+            <h1>CSV Timesheet Analyzer</h1>
+            <p class="subtitle">Upload your timesheet CSV to analyze project hours, view task breakdowns, and export detailed reports</p>
+        </header>
         
-        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
-        <button class="btn" onclick="document.getElementById('csvFileInput').click()">
-            📁 Choose CSV File
-        </button>
-        
-        <div id="fileInfo" class="file-info" style="display: none;"></div>
-        <div id="message"></div>
-        
-        <div id="filters" class="filters">
-            <div class="column-selector">
-                <h4>Select Columns to Display</h4>
-                <div id="columnCheckboxes" class="column-checkboxes"></div>
-                <button class="btn" onclick="selectAllColumns()">Select All</button>
-                <button class="btn" onclick="deselectAllColumns()">Deselect All</button>
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-file-upload"></i>
+                Step 1: Upload Timesheet CSV
             </div>
-            <h3>Row Filters</h3>
-            <div id="filterControls"></div>
-            <button class="btn" onclick="applyFilters()">Apply Filters</button>
-            <button class="btn" onclick="clearFilters()">Clear Filters</button>
+            <div class="card-body">
+                <button class="btn" onclick="document.getElementById('csvFileInput').click()">
+                    <i class="fas fa-file-csv"></i> Choose CSV File
+                </button>
+                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+                
+                <div id="fileInfo" class="file-info hidden">
+                    <h4><i class="fas fa-info-circle"></i> File Information</h4>
+                    <p><strong>File Name:</strong> <span id="fileName">-</span></p>
+                    <p><strong>File Size:</strong> <span id="fileSize">-</span></p>
+                    <p><strong>Rows Processed:</strong> <span id="rowsProcessed">-</span></p>
+                    <p><strong>Projects Found:</strong> <span id="projectsFound">-</span></p>
+                </div>
+                
+                <div id="message" class="message hidden"></div>
+            </div>
         </div>
         
-        <div id="stats" class="stats" style="display: none;"></div>
-        
-        <div style="margin: 20px 0;">
-            <button class="btn btn-success" onclick="exportToPDF()" style="display: none;" id="exportBtn">
-                📄 Export to PDF
-            </button>
+        <div class="card hidden" id="analysisCard">
+            <div class="card-header">
+                <i class="fas fa-chart-bar"></i>
+                Step 2: Analyze Project Hours
+            </div>
+            <div class="card-body">
+                <div id="stats" class="stats hidden">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalProjects">0</div>
+                        <div class="stat-label">Total Projects</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalHours">0</div>
+                        <div class="stat-label">Total Hours</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalTasks">0</div>
+                        <div class="stat-label">Unique Tasks</div>
+                    </div>
+                </div>
+                
+                <div class="tables-container">
+                    <div class="table-section">
+                        <h3><i class="fas fa-project-diagram"></i> Projects Summary</h3>
+                        <table id="projectsTable">
+                            <thead>
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Total Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Project rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="table-section">
+                        <h3><i class="fas fa-tasks"></i> Project Tasks</h3>
+                        <div class="project-details hidden" id="projectDetails">
+                            <h3>Selected Project: <span id="selectedProjectName">-</span></h3>
+                            <table id="tasksTable">
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>Hours</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Task rows will be inserted here -->
+                                </tbody>
+                            </table>
+                            <div class="stats" style="margin-top: 15px;">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="projectTotalHours">0</div>
+                                    <div class="stat-label">Total Project Hours</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="projectTaskCount">0</div>
+                                    <div class="stat-label">Tasks</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="noProjectMessage" class="message warning">
+                            <i class="fas fa-info-circle"></i> Select a project to view its task breakdown
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 25px; text-align: center;">
+                    <button class="btn btn-success" id="exportBtn" class="hidden">
+                        <i class="fas fa-file-pdf"></i> Export Project to PDF
+                    </button>
+                </div>
+            </div>
         </div>
         
-        <div id="preview" class="preview" style="display: none;"></div>
+        <div class="footer">
+            <p>CSV Timesheet Analyzer &bull; Easily summarize project hours and tasks</p>
+            <p>Automatically detects columns: Project, Task, Hours</p>
+        </div>
     </div>
 
     <script>
+        // Global variables
         let allData = [];
-        let filteredData = [];
         let headers = [];
-        let selectedColumns = [];
+        let projectData = {};
+        let currentProject = null;
         
-        document.getElementById('csvFileInput').addEventListener('change', function(event) {
+        // Common column names for auto-detection
+        const projectColumns = ['project', 'proj', 'project name', 'project title'];
+        const taskColumns = ['task', 'description', 'activity', 'work done'];
+        const hourColumns = ['hours', 'time', 'duration', 'hrs', 'hours worked'];
+        
+        // DOM elements
+        const csvFileInput = document.getElementById('csvFileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const messageDiv = document.getElementById('message');
+        const analysisCard = document.getElementById('analysisCard');
+        const statsDiv = document.getElementById('stats');
+        const projectsTable = document.getElementById('projectsTable');
+        const projectDetails = document.getElementById('projectDetails');
+        const selectedProjectName = document.getElementById('selectedProjectName');
+        const tasksTable = document.getElementById('tasksTable');
+        const exportBtn = document.getElementById('exportBtn');
+        const noProjectMessage = document.getElementById('noProjectMessage');
+        const totalProjects = document.getElementById('totalProjects');
+        const totalHours = document.getElementById('totalHours');
+        const totalTasks = document.getElementById('totalTasks');
+        const projectTotalHours = document.getElementById('projectTotalHours');
+        const projectTaskCount = document.getElementById('projectTaskCount');
+        
+        // Initialize event listeners
+        csvFileInput.addEventListener('change', handleFileUpload);
+        exportBtn.addEventListener('click', exportToPDF);
+        
+        function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            document.getElementById('fileInfo').innerHTML = `
-                <strong>File:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)
-            `;
-            document.getElementById('fileInfo').style.display = 'block';
+            // Reset previous data
+            resetAnalysis();
+            
+            // Show file info
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = `${(file.size / 1024).toFixed(2)} KB`;
+            fileInfo.classList.remove('hidden');
             
             if (!file.name.toLowerCase().endsWith('.csv')) {
                 showMessage('Error: Please select a CSV file.', 'error');
@@ -187,7 +474,7 @@
                 parseCSV(e.target.result);
             };
             reader.readAsText(file);
-        });
+        }
         
         function parseCSV(csv) {
             try {
@@ -202,192 +489,215 @@
                     }
                 }
                 
-                filteredData = [...allData];
-                showMessage(`Success: Loaded ${allData.length} rows with ${headers.length} columns.`, 'success');
+                document.getElementById('rowsProcessed').textContent = allData.length;
+                showMessage(`Successfully loaded ${allData.length} timesheet entries.`, 'success');
                 
-                setupFilters();
-                displayData();
-                document.getElementById('exportBtn').style.display = 'inline-block';
+                // Process the CSV data
+                processTimesheetData();
                 
             } catch (error) {
                 showMessage(`Error parsing CSV: ${error.message}`, 'error');
             }
         }
         
-        function setupFilters() {
-            // Setup column selector
-            const columnCheckboxes = document.getElementById('columnCheckboxes');
-            columnCheckboxes.innerHTML = '';
-            selectedColumns = [...Array(headers.length).keys()]; // All columns selected by default
+        function processTimesheetData() {
+            // Auto-detect columns
+            const projectIndex = detectColumnIndex(projectColumns);
+            const taskIndex = detectColumnIndex(taskColumns);
+            const hourIndex = detectColumnIndex(hourColumns);
             
-            headers.forEach((header, index) => {
-                const label = document.createElement('label');
-                label.innerHTML = `
-                    <input type="checkbox" id="col_${index}" checked onchange="updateSelectedColumns()">
-                    ${header}
-                `;
-                columnCheckboxes.appendChild(label);
-            });
-            
-            // Setup row filters
-            const filterControls = document.getElementById('filterControls');
-            filterControls.innerHTML = '';
-            
-            headers.forEach((header, index) => {
-                const uniqueValues = [...new Set(allData.map(row => row[index]))].sort().slice(0, 50);
-                
-                const filterRow = document.createElement('div');
-                filterRow.className = 'filter-row';
-                filterRow.innerHTML = `
-                    <label style="min-width: 100px;">${header}:</label>
-                    <select id="filter_${index}">
-                        <option value="">All</option>
-                        ${uniqueValues.map(val => `<option value="${val}">${val}</option>`).join('')}
-                    </select>
-                    <input type="text" id="search_${index}" placeholder="Search..." style="width: 150px;">
-                `;
-                filterControls.appendChild(filterRow);
-            });
-            
-            document.getElementById('filters').style.display = 'block';
-        }
-        
-        function updateSelectedColumns() {
-            selectedColumns = [];
-            headers.forEach((_, index) => {
-                if (document.getElementById(`col_${index}`).checked) {
-                    selectedColumns.push(index);
-                }
-            });
-            displayData();
-        }
-        
-        function selectAllColumns() {
-            headers.forEach((_, index) => {
-                document.getElementById(`col_${index}`).checked = true;
-            });
-            updateSelectedColumns();
-        }
-        
-        function deselectAllColumns() {
-            headers.forEach((_, index) => {
-                document.getElementById(`col_${index}`).checked = false;
-            });
-            selectedColumns = [];
-            displayData();
-        }
-        
-        function applyFilters() {
-            filteredData = allData.filter(row => {
-                return headers.every((header, index) => {
-                    const selectFilter = document.getElementById(`filter_${index}`).value;
-                    const searchFilter = document.getElementById(`search_${index}`).value.toLowerCase();
-                    
-                    if (selectFilter && row[index] !== selectFilter) return false;
-                    if (searchFilter && !row[index].toLowerCase().includes(searchFilter)) return false;
-                    
-                    return true;
-                });
-            });
-            
-            displayData();
-        }
-        
-        function clearFilters() {
-            headers.forEach((_, index) => {
-                document.getElementById(`filter_${index}`).value = '';
-                document.getElementById(`search_${index}`).value = '';
-            });
-            filteredData = [...allData];
-            displayData();
-        }
-        
-        function displayData() {
-            const preview = document.getElementById('preview');
-            const stats = document.getElementById('stats');
-            
-            if (selectedColumns.length === 0) {
-                preview.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">Please select at least one column to display.</p>';
-                preview.style.display = 'block';
+            if (projectIndex === -1 || hourIndex === -1) {
+                showMessage('Error: Could not detect required columns (Project and Hours).', 'error');
                 return;
             }
             
-            stats.innerHTML = `
-                <strong>Stats:</strong> Showing ${filteredData.length} of ${allData.length} rows, ${selectedColumns.length} of ${headers.length} columns
-            `;
-            stats.style.display = 'block';
+            // Reset project data
+            projectData = {};
             
-            const selectedHeaders = selectedColumns.map(i => headers[i]);
-            
-            let html = '<table>';
-            html += '<tr>' + selectedHeaders.map(h => `<th>${h}</th>`).join('') + '</tr>';
-            
-            filteredData.slice(0, 100).forEach(row => {
-                const selectedCells = selectedColumns.map(i => row[i] || '');
-                html += '<tr>' + selectedCells.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+            // Process each row
+            allData.forEach(row => {
+                const project = row[projectIndex] || 'Uncategorized';
+                const task = (taskIndex !== -1) ? (row[taskIndex] || 'General Task') : 'General Task';
+                const hours = parseFloat(row[hourIndex]) || 0;
+                
+                // Initialize project if not exists
+                if (!projectData[project]) {
+                    projectData[project] = {
+                        totalHours: 0,
+                        tasks: {}
+                    };
+                }
+                
+                // Initialize task if not exists
+                if (!projectData[project].tasks[task]) {
+                    projectData[project].tasks[task] = 0;
+                }
+                
+                // Add hours
+                projectData[project].tasks[task] += hours;
+                projectData[project].totalHours += hours;
             });
             
-            html += '</table>';
+            // Update stats
+            const projectCount = Object.keys(projectData).length;
+            let allHours = 0;
+            let taskCount = 0;
             
-            if (filteredData.length > 100) {
-                html += '<p style="padding: 10px; text-align: center; color: #666;">Showing first 100 rows. Export to PDF for complete data.</p>';
+            Object.values(projectData).forEach(project => {
+                allHours += project.totalHours;
+                taskCount += Object.keys(project.tasks).length;
+            });
+            
+            totalProjects.textContent = projectCount;
+            totalHours.textContent = allHours.toFixed(2);
+            totalTasks.textContent = taskCount;
+            document.getElementById('projectsFound').textContent = projectCount;
+            
+            // Render projects table
+            renderProjectsTable();
+            
+            // Show analysis section
+            analysisCard.classList.remove('hidden');
+            statsDiv.classList.remove('hidden');
+            exportBtn.classList.remove('hidden');
+        }
+        
+        function detectColumnIndex(columnNames) {
+            const lowerHeaders = headers.map(h => h.toLowerCase());
+            for (const name of columnNames) {
+                const index = lowerHeaders.indexOf(name.toLowerCase());
+                if (index !== -1) return index;
             }
+            return -1;
+        }
+        
+        function renderProjectsTable() {
+            const tbody = projectsTable.querySelector('tbody');
+            tbody.innerHTML = '';
             
-            preview.innerHTML = html;
-            preview.style.display = 'block';
+            // Sort projects by hours (descending)
+            const sortedProjects = Object.entries(projectData).sort((a, b) => b[1].totalHours - a[1].totalHours);
+            
+            sortedProjects.forEach(([project, data]) => {
+                const row = document.createElement('tr');
+                row.className = 'project-row';
+                row.dataset.project = project;
+                row.innerHTML = `
+                    <td>${project}</td>
+                    <td>${data.totalHours.toFixed(2)}</td>
+                `;
+                row.addEventListener('click', () => selectProject(project));
+                tbody.appendChild(row);
+            });
+        }
+        
+        function selectProject(project) {
+            // Update UI
+            currentProject = project;
+            
+            // Remove previous selection
+            document.querySelectorAll('.project-row').forEach(row => {
+                row.classList.remove('selected-project');
+            });
+            
+            // Add selection to current row
+            document.querySelector(`.project-row[data-project="${project}"]`).classList.add('selected-project');
+            
+            // Show project details
+            selectedProjectName.textContent = project;
+            
+            // Render tasks table
+            const tasks = projectData[project].tasks;
+            const tbody = tasksTable.querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            // Sort tasks by hours (descending)
+            const sortedTasks = Object.entries(tasks).sort((a, b) => b[1] - a[1]);
+            
+            sortedTasks.forEach(([task, hours]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${task}</td>
+                    <td>${hours.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Update project stats
+            projectTotalHours.textContent = projectData[project].totalHours.toFixed(2);
+            projectTaskCount.textContent = Object.keys(tasks).length;
+            
+            // Show details section
+            projectDetails.classList.remove('hidden');
+            noProjectMessage.classList.add('hidden');
         }
         
         function exportToPDF() {
-            console.log('Export PDF clicked');
+            if (!currentProject) {
+                showMessage('Please select a project first.', 'error');
+                return;
+            }
             
             try {
                 if (typeof window.jspdf === 'undefined') {
-                    console.error('jsPDF not loaded');
                     showMessage('PDF library not loaded. Please refresh and try again.', 'error');
                     return;
                 }
                 
-                if (selectedColumns.length === 0) {
-                    showMessage('Please select at least one column to export.', 'error');
-                    return;
-                }
-                
-                console.log('Creating PDF...');
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                const selectedHeaders = selectedColumns.map(i => headers[i]);
-                const selectedData = filteredData.map(row => selectedColumns.map(i => row[i] || ''));
+                // Project title
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Timesheet Report: ${currentProject}`, 20, 20);
                 
-                console.log('Headers:', selectedHeaders);
-                console.log('Data rows:', selectedData.length);
+                // Report details
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Report generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+                doc.text(`Total hours: ${projectData[currentProject].totalHours.toFixed(2)}`, 20, 40);
                 
-                doc.setFontSize(16);
-                doc.text('CSV Export', 20, 20);
+                // Prepare table data
+                const tasks = projectData[currentProject].tasks;
+                const tableData = [];
                 
-                doc.setFontSize(10);
-                doc.text(`Rows: ${selectedData.length}, Columns: ${selectedHeaders.length}`, 20, 30);
-                doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 35);
+                // Sort tasks by hours (descending)
+                const sortedTasks = Object.entries(tasks).sort((a, b) => b[1] - a[1]);
                 
-                if (typeof doc.autoTable === 'function') {
-                    doc.autoTable({
-                        head: [selectedHeaders],
-                        body: selectedData,
-                        startY: 45,
-                        styles: { fontSize: 8, cellPadding: 2 },
-                        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                        alternateRowStyles: { fillColor: [245, 245, 245] },
-                        margin: { top: 45, left: 10, right: 10 },
-                    });
-                } else {
-                    console.error('autoTable not available');
-                    showMessage('PDF table plugin not loaded properly.', 'error');
-                    return;
-                }
+                sortedTasks.forEach(([task, hours]) => {
+                    tableData.push([task, hours.toFixed(2)]);
+                });
                 
-                console.log('Saving PDF...');
-                doc.save('csv_data.pdf');
-                showMessage('PDF downloaded successfully!', 'success');
+                // Add total row
+                tableData.push(['TOTAL', projectData[currentProject].totalHours.toFixed(2)]);
+                
+                // Create table
+                doc.autoTable({
+                    head: [['Task', 'Hours']],
+                    body: tableData,
+                    startY: 50,
+                    styles: { fontSize: 10 },
+                    headStyles: { 
+                        fillColor: [41, 128, 185],
+                        textColor: 255,
+                        fontStyle: 'bold'
+                    },
+                    alternateRowStyles: { fillColor: [245, 245, 245] },
+                    margin: { top: 50 },
+                    didDrawCell: function(data) {
+                        // Highlight the total row
+                        if (data.row.index === tableData.length - 1) {
+                            doc.setFillColor(46, 204, 113);
+                            doc.setTextColor(255, 255, 255);
+                            doc.setFontStyle('bold');
+                        }
+                    }
+                });
+                
+                // Save PDF
+                doc.save(`timesheet_${currentProject.replace(/\s+/g, '_')}.pdf`);
+                showMessage('PDF exported successfully!', 'success');
                 
             } catch (error) {
                 console.error('PDF Error:', error);
@@ -396,9 +706,26 @@
         }
         
         function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.className = type;
             messageDiv.textContent = message;
+            messageDiv.className = 'message ' + type;
+            messageDiv.classList.remove('hidden');
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+        
+        function resetAnalysis() {
+            projectData = {};
+            currentProject = null;
+            projectsTable.querySelector('tbody').innerHTML = '';
+            tasksTable.querySelector('tbody').innerHTML = '';
+            projectDetails.classList.add('hidden');
+            noProjectMessage.classList.remove('hidden');
+            messageDiv.classList.add('hidden');
         }
     </script>
 </body>
